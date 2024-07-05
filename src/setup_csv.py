@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import requests
 import gzip
@@ -6,7 +7,7 @@ from IPython.display import display
 
 
 """
-Downloads .csv.gz archives and unpacks them into ./data/ folder with required changes
+Downloads .csv.gz archives from https://rebrickable.com/downloads/ and unpacks them into ./data/ folder with required changes
 """
 
 
@@ -35,27 +36,48 @@ def collect_csv():
         unpack(db_item)
 
 
+def get_parent(df: pd.DataFrame, theme_id):
+    parent = df.loc[df["id"] == theme_id, "parent_id"].iloc[0]
+    if parent == theme_id:
+        return theme_id
+    df.loc[df["id"] == theme_id, "parent_id"] = get_parent(df, parent)
+    return parent
+
+
 def transform_csv():
-    sets_df = pd.read_csv("../data/sets.csv")
-    sets_df = sets_df.drop(columns=["name", "num_parts", "img_url"])
-    sets_df.to_csv("../data/sets.csv", index=False)
-
-    inventories_df = pd.read_csv("../data/inventories.csv")
-    inventories_df = inventories_df.drop(columns=["version"])
-    inventories_df.to_csv("../data/inventories.csv", index=False)
-
-    colors_df = pd.read_csv("../data/colors.csv")
-    colors_df = colors_df.drop(columns=["rgb", "is_trans"])
+    colors_df = pd.read_csv("../data/colors.csv", usecols=["id", "name"])
     colors_df.to_csv("../data/colors.csv", index=False)
 
-    parts_df = pd.read_csv("../data/inventory_parts.csv")
+    parts_df = pd.read_csv("../data/inventory_parts.csv", usecols=["inventory_id", "color_id", "quantity", "is_spare"])
     parts_df = parts_df.drop(index=parts_df[parts_df["is_spare"] == 't'].index)
-    parts_df = parts_df.drop(columns=["part_num", "img_url", "is_spare"])
+    parts_df = parts_df.drop(columns=["is_spare"])
     parts_df.to_csv("../data/inventory_parts.csv", index=False)
 
     themes_df = pd.read_csv("../data/themes.csv")
     themes_df["parent_id"] = themes_df["parent_id"].fillna(themes_df["id"]).astype("int64")
     themes_df.to_csv("../data/themes.csv", index=False)
+
+    for theme_id in themes_df["id"]:
+        get_parent(themes_df, theme_id)
+
+    themes_df = themes_df.rename(columns={"id": "theme_id"})
+    themes_df.to_csv("../data/themes.csv", index=False)
+
+    sets_df = pd.read_csv("../data/sets.csv", usecols=["set_num", "year", "theme_id"])
+    sets_df = sets_df.merge(themes_df, how="left")
+    sets_df = sets_df.drop(columns=["theme_id", "name"])
+    sets_df = sets_df.rename(columns={"parent_id": "theme_id"})
+    sets_df = sets_df.merge(themes_df, how="left")
+
+    sets_df = sets_df.drop(columns=["parent_id", "theme_id"])
+    sets_df = sets_df.rename(columns={"name": "theme_name"})
+
+    inventories_df = pd.read_csv("../data/inventories.csv", usecols=["id", "set_num"])
+    inventories_df = inventories_df.merge(sets_df, how="left").dropna(axis="index")
+    inventories_df = inventories_df.drop(columns=["set_num"])
+    inventories_df = inventories_df.set_index("id")
+    inventories_df.to_csv("../data/inventories.csv")
+
 
 collect_csv()
 transform_csv()
