@@ -28,8 +28,7 @@ class LegoDB:
         self.year_df = None
         collect_csv()
         setup_themes.transform_records()
-        self.fill_theme_df()
-        self.fill_year_df()
+        self.theme_df, self.year_df = count_colors.count_colors()
 
     def show_colors(self):
         df = pd.read_csv("../data/colors.csv", index_col=0)
@@ -38,16 +37,6 @@ class LegoDB:
     def show_themes(self):
         df = pd.read_csv("../data/result.csv", usecols=[0])
         print(df.to_string())
-
-    def fill_theme_df(self):
-        # 5m53s
-        self.theme_df = count_colors.get_theme_df()
-        # display(self.theme_df)
-
-    def fill_year_df(self):
-        # 5m22s
-        self.year_df = count_colors.get_year_df()
-        # display(self.year)
 
     def create_result_table(self, item, header, count, source_list, total_pcs):
         output_dict = {item: [], "quantity": [], "percentage": []}

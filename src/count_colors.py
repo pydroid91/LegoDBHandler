@@ -1,10 +1,12 @@
 import datetime
+import time
+
 import numpy as np
 import pandas as pd
 from IPython.display import display
 
 
-def create_result_dataframe():
+def create_theme_dataframe():
     color_ids = pd.read_csv("../data/colors.csv")["id"]
     # color_ids = pd.concat((pd.Series(["theme_id"]), color_ids))
     color_ids.loc[len(color_ids)] = "total"
@@ -30,40 +32,33 @@ def create_year_dataframe():
     return df
 
 
-def count_colors(result_df, item):
+def count_colors():
+    theme_df = create_theme_dataframe()
+    year_df = create_year_dataframe()
     parts_df = pd.read_csv("../data/inventory_parts.csv")
     inventory_df = pd.read_csv("../data/inventories.csv", index_col=0)
 
     for part in parts_df.values:
-        inventory_id = part[0]
-        color_id = part[1]
-        quantity = part[2]
+        inventory_id, color_id, quantity = part
 
         try:
-            item_name = inventory_df.loc[inventory_id, item]
+            theme_name = inventory_df.loc[inventory_id, "theme_name"]
+            year = inventory_df.loc[inventory_id, "year"]
         except:
             continue
 
-        result_df.loc[item_name, color_id] += quantity
+        theme_df.loc[theme_name, color_id] += quantity
+        year_df.loc[year, color_id] += quantity
 
-    result_df.loc["total_pcs"] = result_df.sum(axis="index")
-    result_df["total"] = result_df.sum(axis="columns")
+    theme_df.index.name = "theme_name"
+    theme_df = theme_df.drop(index="BrickLink Designer Program")
+    theme_df.loc["total_pcs"] = theme_df.sum(axis="index")
+    theme_df["total"] = theme_df.sum(axis="columns")
+    theme_df.to_csv("../data/theme_result.csv")
 
+    theme_df.index.name = "year"
+    year_df.loc["total_pcs"] = year_df.sum(axis="index")
+    year_df["total"] = year_df.sum(axis="columns")
+    year_df.to_csv("../data/year_result.csv")
 
-def get_theme_df():
-    df = create_result_dataframe()
-    count_colors(df, "theme_name")
-    df.index.name = "theme_name"
-    df = df.drop(index="BrickLink Designer Program")
-    df.to_csv("../data/result.csv")
-    return df
-
-
-def get_year_df():
-    df = create_year_dataframe()
-    count_colors(df, "year")
-    df.index.name = "year"
-    df.to_csv("../data/year_result.csv")
-    return df
-
-# result_df = pd.read_csv("../data/result.csv", index_col=0)
+    return theme_df, year_df

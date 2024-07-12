@@ -1,9 +1,13 @@
 from LegoDB_class import LegoDB
 import pandas as pd
+import time
 
 def main():
+    st = time.time()
     print("Collecting database...")
+
     db = LegoDB()
+    print(time.time() - st)
     print("Available commands:\n"
           "(1) Show all colors.\n"
           "(2) Show all themes.\n"
