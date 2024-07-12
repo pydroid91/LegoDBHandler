@@ -17,7 +17,7 @@ def get_parent(df: pd.DataFrame, theme_id):
     return parent
 
 
-def transform_theme_records():
+def transform_records():
     """Removes unnecessary columns from datasets, combines themes with sets and inventories."""
     colors_df = pd.read_csv("../data/colors.csv", usecols=["id", "name"])
     colors_df.to_csv("../data/colors.csv", index=False)
@@ -52,6 +52,7 @@ def transform_theme_records():
     # attributing themes to inventories
     inventories_df = pd.read_csv("../data/inventories.csv", usecols=["id", "set_num"])
     inventories_df = inventories_df.merge(sets_df, how="left").dropna(axis="index")
+    inventories_df["year"] = inventories_df["year"].astype("int")
     inventories_df = inventories_df.drop(columns=["set_num"])
     inventories_df = inventories_df.set_index("id")
     inventories_df.to_csv("../data/inventories.csv")
